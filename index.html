@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="UTF-8">
+    <title>Untitled</title>
+    
+
+  </head>
+    
+  <body>
+  <!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لعبة تصنيف فضائل وآداب رمضان</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Tajawal', sans-serif;
+            background-color: #f3f4f6;
+            background-image: url('https://www.transparenttextures.com/patterns/stardust.png');
+        }
+        .drag-item {
+            cursor: grab;
+            transition: transform 0.2s, background-color 0.2s;
+            touch-action: none;
+        }
+        .drag-item:active {
+            cursor: grabbing;
+            transform: scale(1.05);
+        }
+        .drop-zone {
+            min-height: 150px;
+            transition: border-color 0.3s, background-color 0.3s;
+        }
+        .drop-zone.drag-over {
+            background-color: rgba(59, 130, 246, 0.1);
+            border-color: #3b82f6;
+        }
+        .correct {
+            background-color: #d1fae5 !important;
+            border-color: #10b981 !important;
+        }
+        .wrong {
+            background-color: #fee2e2 !important;
+            border-color: #ef4444 !important;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center p-4">
+
+    <!-- Header -->
+    <header class="text-center my-8">
+        <h1 class="text-4xl font-bold text-emerald-800 mb-2">🌙 لعبة تصنيف رمضان</h1>
+        <p class="text-lg text-emerald-600">صنف العبارات التالية في المكان الصحيح</p>
+    </header>
+
+    <!-- Game Container -->
+    <main class="w-full max-w-5xl grid grid-cols-1 md:grid-cols-3 gap-6">
+        
+        <!-- Category 1: Virtues (الفضائل) -->
+        <div class="bg-white p-6 rounded-2xl shadow-xl border-t-4 border-amber-500">
+            <h2 class="text-xl font-bold text-center mb-4 text-amber-700">✨ فضائل رمضان وصيامه</h2>
+            <div id="virtues-zone" class="drop-zone border-2 border-dashed border-amber-200 rounded-xl p-4 flex flex-col gap-3" ondrop="drop(event)" ondragover="allowDrop(event)">
+                <!-- Items dropped here -->
+            </div>
+        </div>
+
+        <!-- Middle: Items to drag -->
+        <div class="flex flex-col gap-4">
+            <div class="bg-emerald-50 p-4 rounded-xl shadow-inner">
+                <h3 class="text-center font-bold text-emerald-800 mb-4">اسحب من هنا:</h3>
+                <div id="items-container" class="flex flex-col gap-3">
+                    <!-- Dynamic items will be injected here -->
+                </div>
+            </div>
+            
+            <button onclick="checkResults()" class="w-full py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 transition shadow-lg">
+                تحقق من الإجابات ✅
+            </button>
+            <button onclick="resetGame()" class="w-full py-3 bg-gray-200 text-gray-700 font-bold rounded-xl hover:bg-gray-300 transition">
+                إعادة اللعب 🔄
+            </button>
+        </div>
+
+        <!-- Category 2: Etiquette (الآداب) -->
+        <div class="bg-white p-6 rounded-2xl shadow-xl border-t-4 border-blue-500">
+            <h2 class="text-xl font-bold text-center mb-4 text-blue-700">📜 آداب الصيام</h2>
+            <div id="etiquette-zone" class="drop-zone border-2 border-dashed border-blue-200 rounded-xl p-4 flex flex-col gap-3" ondrop="drop(event)" ondragover="allowDrop(event)">
+                <!-- Items dropped here -->
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Feedback Modal -->
+    <div id="modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white p-8 rounded-2xl max-w-sm w-full text-center">
+            <div id="modal-icon" class="text-6xl mb-4"></div>
+            <h2 id="modal-title" class="text-2xl font-bold mb-2"></h2>
+            <p id="modal-message" class="text-gray-600 mb-6"></p>
+            <button onclick="closeModal()" class="px-6 py-2 bg-emerald-600 text-white rounded-lg font-bold">حسناً</button>
+        </div>
+    </div>
+
+    <script>
+        const gameData = [
+            { id: 1, text: "تُفتح فيه أبواب الجنة", category: "virtues" },
+            { id: 2, text: "تُغلق فيه أبواب النار", category: "virtues" },
+            { id: 3, text: "تُصفد فيه الشياطين", category: "virtues" },
+            { id: 4, text: "فيه ليلة القدر (خير من ألف شهر)", category: "virtues" },
+            { id: 5, text: "لخلوف فم الصائم أطيب عند الله من المسك", category: "virtues" },
+            { id: 6, text: "تعجيل الفطور", category: "etiquette" },
+            { id: 7, text: "تأخير السحور", category: "etiquette" },
+            { id: 8, text: "حفظ اللسان عن الكذب والغيبة", category: "etiquette" },
+            { id: 9, text: "الدعاء عند الإفطار", category: "etiquette" },
+            { id: 10, text: "الجود وقراءة القرآن بكثرة", category: "etiquette" }
+        ];
+
+        function shuffle(array) {
+            return array.sort(() => Math.random() - 0.5);
+        }
+
+        function initGame() {
+            const container = document.getElementById('items-container');
+            container.innerHTML = '';
+            document.getElementById('virtues-zone').innerHTML = '';
+            document.getElementById('etiquette-zone').innerHTML = '';
+            
+            shuffle(gameData).forEach(item => {
+                const div = document.createElement('div');
+                div.id = `item-${item.id}`;
+                div.className = 'drag-item bg-white p-3 rounded-lg shadow border border-gray-200 text-center font-medium text-gray-700';
+                div.draggable = true;
+                div.innerText = item.text;
+                div.setAttribute('data-category', item.category);
+                div.ondragstart = drag;
+                
+                // Touch support
+                div.addEventListener('touchstart', handleTouchStart, {passive: false});
+                div.addEventListener('touchmove', handleTouchMove, {passive: false});
+                div.addEventListener('touchend', handleTouchEnd, {passive: false});
+                
+                container.appendChild(div);
+            });
+        }
+
+        // Drag and Drop Logic
+        function allowDrop(ev) {
+            ev.preventDefault();
+            ev.currentTarget.classList.add('drag-over');
+        }
+
+        function drag(ev) {
+            ev.dataTransfer.setData("text", ev.target.id);
+        }
+
+        function drop(ev) {
+            ev.preventDefault();
+            ev.currentTarget.classList.remove('drag-over');
+            const data = ev.dataTransfer.getData("text");
+            const draggedElement = document.getElementById(data);
+            
+            if (ev.currentTarget.classList.contains('drop-zone')) {
+                ev.currentTarget.appendChild(draggedElement);
+            }
+        }
+
+        // Touch Logic
+        let activeElement = null;
+        function handleTouchStart(e) {
+            activeElement = e.target;
+            e.target.style.opacity = '0.5';
+        }
+
+        function handleTouchMove(e) {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const element = activeElement;
+            element.style.position = 'fixed';
+            element.style.left = (touch.clientX - element.offsetWidth / 2) + 'px';
+            element.style.top = (touch.clientY - element.offsetHeight / 2) + 'px';
+            element.style.zIndex = '1000';
+        }
+
+        function handleTouchEnd(e) {
+            const element = activeElement;
+            element.style.opacity = '1';
+            element.style.position = 'static';
+            element.style.zIndex = 'auto';
+            
+            const touch = e.changedTouches[0];
+            const dropZones = document.querySelectorAll('.drop-zone');
+            
+            dropZones.forEach(zone => {
+                const rect = zone.getBoundingClientRect();
+                if (touch.clientX > rect.left && touch.clientX < rect.right &&
+                    touch.clientY > rect.top && touch.clientY < rect.bottom) {
+                    zone.appendChild(element);
+                }
+            });
+            activeElement = null;
+        }
+
+        function checkResults() {
+            const virtuesItems = document.getElementById('virtues-zone').children;
+            const etiquetteItems = document.getElementById('etiquette-zone').children;
+            const totalItems = gameData.length;
+            let correctCount = 0;
+
+            Array.from(virtuesItems).forEach(item => {
+                if (item.getAttribute('data-category') === 'virtues') {
+                    item.classList.add('correct');
+                    correctCount++;
+                } else {
+                    item.classList.add('wrong');
+                }
+            });
+
+            Array.from(etiquetteItems).forEach(item => {
+                if (item.getAttribute('data-category') === 'etiquette') {
+                    item.classList.add('correct');
+                    correctCount++;
+                } else {
+                    item.classList.add('wrong');
+                }
+            });
+
+            showModal(correctCount, totalItems);
+        }
+
+        function showModal(correct, total) {
+            const modal = document.getElementById('modal');
+            const title = document.getElementById('modal-title');
+            const msg = document.getElementById('modal-message');
+            const icon = document.getElementById('modal-icon');
+
+            modal.classList.remove('hidden');
+            
+            if (correct === total) {
+                icon.innerText = '🎉';
+                title.innerText = 'رائع جداً!';
+                msg.innerText = `لقد أجبت على جميع الأسئلة بشكل صحيح (${correct}/${total})`;
+            } else if (correct > total / 2) {
+                icon.innerText = '⭐';
+                title.innerText = 'عمل جيد!';
+                msg.innerText = `لقد حصلت على ${correct} من أصل ${total}. حاول تصحيح الأخطاء باللون الأحمر.`;
+            } else {
+                icon.innerText = '🌙';
+                title.innerText = 'حاول مرة أخرى';
+                msg.innerText = `لقد حصلت على ${correct} من أصل ${total}. راجع معلوماتك وحاول مجدداً.`;
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.add('hidden');
+        }
+
+        function resetGame() {
+            initGame();
+            closeModal();
+        }
+
+        // Initialize on load
+        window.onload = initGame;
+    </script>
+</body>
+</html>
+    
+  </body>
+  
+</html>
